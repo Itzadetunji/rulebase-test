@@ -45,7 +45,6 @@ const parseRequestInteractions = async (request: Request): Promise<InteractionRo
 review.post('/review', async (c) => {
   try {
     const interactions = await parseRequestInteractions(c.req.raw)
-    console.log('interactions', interactions)
 
     const results: ReviewResult[] = []
     for (const interaction of interactions) {

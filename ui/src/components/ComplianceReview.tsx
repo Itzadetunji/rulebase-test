@@ -1,6 +1,12 @@
 import { Fragment, useState } from "react";
 import axios from "axios";
-import { Buildings, ChartBar, List, Phone, Users } from "@phosphor-icons/react";
+import {
+	BuildingsIcon,
+	ChartBarIcon,
+	ListIcon,
+	Phone,
+	UsersIcon,
+} from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +25,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { apiClient, REVIEW_URL } from "@/lib/api";
+import { apiBase, apiClient, REVIEW_URL } from "@/lib/api";
 import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { cn } from "@/lib/utils";
 import type {
@@ -181,9 +187,7 @@ export function ComplianceReview() {
 							<span
 								className={cn(
 									"truncate",
-									file
-										? "text-foreground"
-										: "text-muted-foreground",
+									file ? "text-foreground" : "text-muted-foreground",
 								)}
 							>
 								{file?.name ?? "No file chosen"}
@@ -252,13 +256,13 @@ export function ComplianceReview() {
 							<TableRow>
 								<TableHead className="min-w-[100px]">
 									<span className="inline-flex items-center gap-2">
-										<Users className="text-muted-foreground size-4" />
+										<UsersIcon className="text-muted-foreground size-4" />
 										Employee
 									</span>
 								</TableHead>
 								<TableHead>
 									<span className="inline-flex items-center gap-2">
-										<ChartBar className="text-muted-foreground size-4" />
+										<ChartBarIcon className="text-muted-foreground size-4" />
 										Risk level
 									</span>
 								</TableHead>
@@ -270,13 +274,13 @@ export function ComplianceReview() {
 								</TableHead>
 								<TableHead>
 									<span className="inline-flex items-center gap-2">
-										<Buildings className="text-muted-foreground size-4" />
+										<BuildingsIcon className="text-muted-foreground size-4" />
 										Customer
 									</span>
 								</TableHead>
 								<TableHead className="min-w-[140px]">
 									<span className="inline-flex items-center gap-2">
-										<List className="text-muted-foreground size-4" />
+										<ListIcon className="text-muted-foreground size-4" />
 										Population category
 									</span>
 								</TableHead>
