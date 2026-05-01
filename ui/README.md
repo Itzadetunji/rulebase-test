@@ -1,73 +1,164 @@
-# React + TypeScript + Vite
+# Rulebase UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> React frontend for uploading interaction CSVs and visualizing compliance review results.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Table of Contents
 
-## React Compiler
+- [Overview](#overview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Tech Stack](#tech-stack)
+- [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Environment Variables](#environment-variables)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+<a name="overview"></a>
+## Overview
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Rulebase UI is the web interface for running UDAAP compliance checks on customer interaction data. It lets you upload a CSV, sends it to the backend review endpoint, and renders:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Summary metrics (total, compliant, flagged)
+- Row-level risk indicators
+- Detailed findings (severity, rationale, evidence, suggested rewrite)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+<a name="features"></a>
+## Features
+
+- CSV upload workflow for interaction datasets
+- One-click review run against `POST /api/v1/review`
+- Expandable result rows for detailed rule findings
+- Risk badges and summary counters for quick triage
+- Error-state handling for API and validation failures
+
+---
+
+<a name="getting-started"></a>
+## Getting Started
+
+### Prerequisites
+
+- Bun 1.0+ (recommended) or Node.js 20+
+- Running Rulebase API service
+
+### Installation
+
+1. Clone the repository and move to the UI project:
+
+```bash
+cd ui
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Install dependencies:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
 ```
+
+3. Configure environment variables:
+
+```bash
+cp .env.example .env
+```
+
+4. Start the development server:
+
+```bash
+bun run dev
+```
+
+5. Open the app:
+
+- `http://localhost:5173`
+
+---
+
+<a name="tech-stack"></a>
+## Tech Stack
+
+### Frontend
+
+- React 19
+- TypeScript
+- Vite
+- Axios
+- shadcn-style UI components
+- Tailwind CSS 4
+
+### Tooling
+
+- ESLint
+- Biome
+
+---
+
+<a name="screenshots"></a>
+## Screenshots
+
+### Main Review Screen
+
+`[Add screenshot here]`
+
+*Upload CSV, run review, and inspect summary metrics.*
+
+---
+
+### Expanded Findings View
+
+`[Add screenshot here]`
+
+*Inspect flagged rules with rationale, evidence, and suggested rewrites.*
+
+---
+
+<a name="project-structure"></a>
+## Project Structure
+
+```text
+ui/
+├── src/
+│   ├── components/
+│   │   ├── ComplianceReview.tsx
+│   │   └── ui/
+│   ├── lib/
+│   │   ├── api.ts
+│   │   ├── review-helpers.ts
+│   │   └── utils.ts
+│   ├── types/
+│   │   └── compliance.ts
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── public/
+└── package.json
+```
+
+---
+
+<a name="testing"></a>
+## Testing
+
+Run lint checks:
+
+```bash
+bun run lint
+```
+
+Build for production:
+
+```bash
+bun run build
+```
+
+---
+
+<a name="environment-variables"></a>
+## Environment Variables
+
+- `VITE_API_BASE_URL`: Base URL of the backend API (for example `http://localhost:3000`)

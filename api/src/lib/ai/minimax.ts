@@ -1,14 +1,7 @@
 import OpenAI from 'openai'
 import { BASE_COMPLIANCE_RULES } from '../compliance/rules'
-import {
-  buildComplianceSystemPrompt,
-  buildComplianceUserPrompt
-} from '../compliance/prompt'
-import type {
-  InteractionRow,
-  ReviewOverallStatus,
-  RuleFinding
-} from '../compliance/types'
+import { buildComplianceSystemPrompt, buildComplianceUserPrompt } from '../compliance/prompt'
+import type { InteractionRow, ReviewOverallStatus, RuleFinding } from '../compliance/types'
 
 type ParsedComplianceOutput = {
   overallStatus: ReviewOverallStatus
@@ -61,14 +54,14 @@ const normalizeFindings = (findings: unknown): RuleFinding[] => {
         severity: normalizeSeverity(item.severity ?? 'medium'),
         rationale: item.rationale ?? 'No rationale returned.',
         evidence: item.evidence ?? 'No evidence returned.',
-        suggestedRewrite: item.suggestedRewrite ?? 'No rewrite suggestion returned.'
+        suggestedRewrite: item.suggestedRewrite ?? 'No rewrite suggestion returned.',
       } satisfies RuleFinding
     })
     .filter((finding) => Boolean(finding.ruleId && finding.ruleTitle))
 }
 
 export const evaluateInteractionWithMinimax = async (
-  interaction: InteractionRow
+  interaction: InteractionRow,
 ): Promise<ParsedComplianceOutput> => {
   const apiKey = process.env.MINIMAX_API_KEY
   if (!apiKey) {
@@ -80,7 +73,7 @@ export const evaluateInteractionWithMinimax = async (
 
   const client = new OpenAI({
     apiKey,
-    baseURL: baseUrl
+    baseURL: baseUrl,
   })
 
   let content: string
@@ -91,13 +84,13 @@ export const evaluateInteractionWithMinimax = async (
       messages: [
         {
           role: 'system',
-          content: buildComplianceSystemPrompt(BASE_COMPLIANCE_RULES)
+          content: buildComplianceSystemPrompt(BASE_COMPLIANCE_RULES),
         },
         {
           role: 'user',
-          content: buildComplianceUserPrompt(interaction)
-        }
-      ]
+          content: buildComplianceUserPrompt(interaction),
+        },
+      ],
     })
 
     const messageContent = completion.choices?.[0]?.message?.content
@@ -115,6 +108,6 @@ export const evaluateInteractionWithMinimax = async (
 
   return {
     overallStatus: normalizeStatus(parsed.overallStatus ?? 'flagged'),
-    findings
+    findings,
   }
 }

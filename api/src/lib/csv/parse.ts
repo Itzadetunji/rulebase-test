@@ -6,7 +6,7 @@ const REQUIRED_HEADERS = [
   'channel',
   'agent_id',
   'customer_id',
-  'transcript'
+  'transcript',
 ] as const
 
 type CsvParseResult = {
@@ -67,8 +67,7 @@ const parseCsvRows = (input: string): string[][] => {
   return rows
 }
 
-const normalizeHeader = (header: string) =>
-  header.trim().toLowerCase().replace(/\s+/g, '_')
+const normalizeHeader = (header: string) => header.trim().toLowerCase().replace(/\s+/g, '_')
 
 export const parseInteractionsCsv = (input: string): CsvParseResult => {
   const rows = parseCsvRows(input)
@@ -77,17 +76,16 @@ export const parseInteractionsCsv = (input: string): CsvParseResult => {
   }
 
   const headerRow = rows[0].map(normalizeHeader)
-  const missingHeaders = REQUIRED_HEADERS.filter(
-    (header) => !headerRow.includes(header)
-  )
+  const missingHeaders = REQUIRED_HEADERS.filter((header) => !headerRow.includes(header))
 
   if (missingHeaders.length > 0) {
     throw new Error(`Missing required CSV headers: ${missingHeaders.join(', ')}`)
   }
 
-  const indexMap = Object.fromEntries(
-    headerRow.map((header, index) => [header, index])
-  ) as Record<string, number>
+  const indexMap = Object.fromEntries(headerRow.map((header, index) => [header, index])) as Record<
+    string,
+    number
+  >
 
   const dataRows = rows.slice(1)
   const interactions = dataRows.map((fields, rowIndex) => {
@@ -100,7 +98,7 @@ export const parseInteractionsCsv = (input: string): CsvParseResult => {
 
     if (!interactionId || !timestamp || !channel || !transcript) {
       throw new Error(
-        `Row ${rowIndex + 2} is missing required values (interaction_id, timestamp, channel, transcript).`
+        `Row ${rowIndex + 2} is missing required values (interaction_id, timestamp, channel, transcript).`,
       )
     }
 
@@ -110,7 +108,7 @@ export const parseInteractionsCsv = (input: string): CsvParseResult => {
       channel,
       agentId,
       customerId,
-      transcript
+      transcript,
     } satisfies InteractionRow
   })
 

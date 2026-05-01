@@ -3,13 +3,17 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "build": "bun build src/index.ts --outdir dist",
-    "start": "bun run dist/index.js"
+    "start": "bun run dist/index.js",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "check": "biome check --write ."
   },
   "dependencies": {
     "hono": "^4.12.16",
     "openai": "^6.35.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
     "@types/bun": "latest",
     "tailwindcss": "3.4.17"
   }

@@ -1,63 +1,165 @@
-To install dependencies:
-```sh
+# Rulebase API
+
+> Backend service that parses interaction data and evaluates each row for UDAAP compliance using MiniMax.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Tech Stack](#tech-stack)
+- [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Environment Variables](#environment-variables)
+
+---
+
+<a name="overview"></a>
+## Overview
+
+Rulebase API exposes a review endpoint that accepts interaction data as CSV upload or JSON payload. It parses incoming records, evaluates each interaction against compliance rules, and returns:
+
+- Review summary counts (total, compliant, flagged)
+- Per-interaction review results
+- Rule-level findings with rationale, evidence, and rewrite suggestions
+
+---
+
+<a name="features"></a>
+## Features
+
+- `POST /api/v1/review` endpoint for compliance analysis
+- Dual input format support:
+  - `multipart/form-data` with CSV file
+  - `application/json` with interactions array
+- Per-row evaluation with graceful error capture
+- CORS configuration for local UI and configurable frontend origin
+- Structured response payload for easy frontend rendering
+
+---
+
+<a name="getting-started"></a>
+## Getting Started
+
+### Prerequisites
+
+- Bun 1.0+
+- MiniMax API access key
+
+### Installation
+
+1. Move to the API project:
+
+```bash
+cd api
+```
+
+2. Install dependencies:
+
+```bash
 bun install
 ```
 
-Set up environment variables:
-```sh
+3. Create environment file and add values:
+
+```bash
 cp .env.example .env
 ```
 
-Then set `MINIMAX_API_KEY` in `.env`.
+4. Start the development server:
 
-To run **only** the API (recommended with the React app in `/ui`):
-```sh
+```bash
 bun run dev
 ```
 
-API listens at `http://localhost:3000` with `POST /api/v1/review`.
+5. API is available at:
 
-## React UI (`../ui`)
+- `http://localhost:3000`
 
-From the monorepo root, start the frontend (Vite dev server proxies `/api` to `:3000`):
+---
 
-```sh
-cd ../ui && bun install && bun run dev
+<a name="tech-stack"></a>
+## Tech Stack
+
+### Backend
+
+- Bun runtime
+- Hono
+- OpenAI SDK client (used with MiniMax-compatible endpoint)
+
+### Internal Modules
+
+- CSV parsing utilities
+- Compliance rules and prompt generation
+- AI-based interaction evaluation
+
+---
+
+<a name="screenshots"></a>
+## Screenshots
+
+### API Request Example
+
+`[Add screenshot here]`
+
+*Sample request from Postman/Insomnia or cURL invocation.*
+
+---
+
+### API Response Example
+
+`[Add screenshot here]`
+
+*Sample response showing summary and per-interaction findings.*
+
+---
+
+<a name="project-structure"></a>
+## Project Structure
+
+```text
+api/
+├── src/
+│   ├── app.ts
+│   ├── index.ts
+│   ├── routes/
+│   │   └── review.ts
+│   └── lib/
+│       ├── ai/
+│       │   └── minimax.ts
+│       ├── compliance/
+│       │   ├── prompt.ts
+│       │   ├── rules.ts
+│       │   └── types.ts
+│       └── csv/
+│           └── parse.ts
+├── sample.csv
+└── package.json
 ```
 
-Then open **`http://localhost:5173`**.
+---
 
-Alternatively, set `VITE_API_BASE_URL=http://localhost:3000` in `ui/.env` and call the API from any origin enabled by server CORS (`FRONTEND_ORIGIN` optional).
+<a name="testing"></a>
+## Testing
 
-## Compliance review flow
+No formal automated test suite is currently configured.
 
-- Start the API and the UI as above.
-- Upload a CSV with the following headers:
+Recommended verification:
 
-  - `interaction_id,timestamp,channel,agent_id,customer_id,transcript`
-- Click `Run Review`
-- The UI will call `POST /api/v1/review` and render:
-  - summary totals
-  - per-interaction status
-  - per-rule findings with severity, rationale, evidence, and suggested rewrite
+- Run the API locally with `bun run dev`
+- Submit `sample.csv` via `POST /api/v1/review`
+- Confirm summary and finding structure in the response
 
-## API endpoint
+---
 
-- `POST /api/v1/review`
-- Supported content types:
-  - `multipart/form-data` with `file` (CSV upload)
-  - `application/json` with:
-```json
-{
-  "interactions": [
-    {
-      "interactionId": "INT001",
-      "timestamp": "2026-04-29T10:15:00Z",
-      "channel": "call",
-      "agentId": "AGENT01",
-      "customerId": "CUST123",
-      "transcript": "Text to evaluate"
-    }
-  ]
-}
-```
+<a name="environment-variables"></a>
+## Environment Variables
+
+- `MINIMAX_API_KEY`: MiniMax API key for compliance evaluation requests
+- `MINIMAX_BASE_URL`: Base API URL (default: `https://api.minimax.io/v1`)
+- `MINIMAX_MODEL`: Model name used for evaluations
+- `PORT` (optional): API port (defaults to `3000`)
+- `FRONTEND_ORIGIN` (optional): Additional allowed CORS origin

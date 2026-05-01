@@ -40,7 +40,6 @@ const parseRequestInteractions = async (request: Request): Promise<InteractionRo
   throw new Error('Unsupported content-type. Use multipart/form-data or application/json.')
 }
 
-
 // api/v1/review
 review.post('/review', async (c) => {
   try {
@@ -57,7 +56,7 @@ review.post('/review', async (c) => {
           agentId: interaction.agentId,
           customerId: interaction.customerId,
           overallStatus: reviewResult.overallStatus,
-          findings: reviewResult.findings
+          findings: reviewResult.findings,
         })
       } catch (error) {
         results.push({
@@ -68,32 +67,30 @@ review.post('/review', async (c) => {
           customerId: interaction.customerId,
           overallStatus: 'flagged',
           findings: [],
-          error: error instanceof Error ? error.message : 'Unknown evaluation error.'
+          error: error instanceof Error ? error.message : 'Unknown evaluation error.',
         })
       }
     }
 
-    const compliantRows = results.filter(
-      (result) => result.overallStatus === 'compliant'
-    ).length
+    const compliantRows = results.filter((result) => result.overallStatus === 'compliant').length
     const flaggedRows = results.length - compliantRows
 
     const payload: ReviewResponse = {
       summary: {
         totalRows: results.length,
         compliantRows,
-        flaggedRows
+        flaggedRows,
       },
-      results
+      results,
     }
 
     return c.json(payload)
   } catch (error) {
     return c.json(
       {
-        error: error instanceof Error ? error.message : 'Unable to process review request.'
+        error: error instanceof Error ? error.message : 'Unable to process review request.',
       },
-      400
+      400,
     )
   }
 })
