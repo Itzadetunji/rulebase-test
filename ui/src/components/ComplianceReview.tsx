@@ -137,7 +137,8 @@ export function ComplianceReview() {
 		<div className="bg-background mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-6 lg:px-8 antialiased">
 			<header className="mb-8 space-y-1">
 				<h1 className="text-xl font-semibold tracking-tight text-foreground">
-					Compliance review
+					Compliance review: UDAAP (Unfair, Deceptive, or Abusive Acts or
+					Practices)
 				</h1>
 				<p className="text-muted-foreground max-w-xl text-xs leading-relaxed">
 					Upload a CSV of interactions and run analysis. The app calls{" "}
