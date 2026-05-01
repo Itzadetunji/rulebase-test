@@ -25,7 +25,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { apiBase, apiClient, REVIEW_URL } from "@/lib/api";
+import { apiClient, REVIEW_URL } from "@/lib/api";
 import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { cn } from "@/lib/utils";
 import type {
