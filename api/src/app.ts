@@ -8,7 +8,7 @@ const app = new Hono()
 const devOrigins =
   process.env.NODE_ENV !== 'production'
     ? (['http://localhost:5173', 'http://127.0.0.1:5173'] as const)
-    : []
+    : ["https://rulebase-test.vercel.app/"]
 
 app.use('*', logger())
 app.use(
