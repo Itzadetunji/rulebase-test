@@ -1,5 +1,7 @@
 import { Fragment, useState } from "react";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
 	BuildingsIcon,
 	ChartBarIcon,
@@ -535,9 +537,59 @@ export function ComplianceReview() {
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="pt-4">
-								<p className="bg-muted/40 whitespace-pre-wrap rounded-md p-3 text-sm leading-relaxed">
-									{actionPayload.output}
-								</p>
+								<div className="bg-muted/40 rounded-md p-3 text-sm leading-relaxed">
+									<ReactMarkdown
+										remarkPlugins={[remarkGfm]}
+										components={{
+											h1: ({ children }) => (
+												<h1 className="mb-2 text-lg font-semibold">{children}</h1>
+											),
+											h2: ({ children }) => (
+												<h2 className="mb-2 text-base font-semibold">{children}</h2>
+											),
+											h3: ({ children }) => (
+												<h3 className="mb-1 text-sm font-semibold">{children}</h3>
+											),
+											p: ({ children }) => (
+												<p className="mb-2 whitespace-pre-wrap">{children}</p>
+											),
+											ul: ({ children }) => (
+												<ul className="mb-2 list-disc space-y-1 pl-5">{children}</ul>
+											),
+											ol: ({ children }) => (
+												<ol className="mb-2 list-decimal space-y-1 pl-5">{children}</ol>
+											),
+											li: ({ children }) => <li>{children}</li>,
+											code: ({ children }) => (
+												<code className="bg-background rounded px-1.5 py-0.5 font-mono text-xs">
+													{children}
+												</code>
+											),
+											pre: ({ children }) => (
+												<pre className="bg-background mb-2 overflow-x-auto rounded p-2">
+													{children}
+												</pre>
+											),
+											table: ({ children }) => (
+												<div className="mb-2 overflow-x-auto">
+													<table className="w-full border-collapse text-left text-xs">
+														{children}
+													</table>
+												</div>
+											),
+											th: ({ children }) => (
+												<th className="border-border border px-2 py-1 font-semibold">
+													{children}
+												</th>
+											),
+											td: ({ children }) => (
+												<td className="border-border border px-2 py-1">{children}</td>
+											),
+										}}
+									>
+										{actionPayload.output}
+									</ReactMarkdown>
+								</div>
 							</CardContent>
 						</Card>
 					) : null}
