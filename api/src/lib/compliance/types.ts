@@ -48,3 +48,8 @@ export type ReviewResponse = {
   summary: ReviewSummary
   results: ReviewResult[]
 }
+
+export type ComplianceActionResponse = {
+  prompt: string
+  output: string
+}

@@ -1,7 +1,12 @@
 import { Hono } from 'hono'
+import { evaluateInteractionWithMinimax, runComplianceActionWithMinimax } from '../lib/ai/minimax'
+import type {
+  ComplianceActionResponse,
+  InteractionRow,
+  ReviewResponse,
+  ReviewResult,
+} from '../lib/compliance/types'
 import { parseInteractionsCsv } from '../lib/csv/parse'
-import { evaluateInteractionWithMinimax } from '../lib/ai/minimax'
-import type { InteractionRow, ReviewResponse, ReviewResult } from '../lib/compliance/types'
 
 const review = new Hono()
 
@@ -35,6 +40,50 @@ const parseRequestInteractions = async (request: Request): Promise<InteractionRo
 
   if (contentType.includes('application/json')) {
     return parseJsonInteractions(request)
+  }
+
+  throw new Error('Unsupported content-type. Use multipart/form-data or application/json.')
+}
+
+const parseRequestWithPrompt = async (
+  request: Request,
+): Promise<{ interactions: InteractionRow[]; prompt: string }> => {
+  const contentType = request.headers.get('content-type') ?? ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData()
+    const file = formData.get('file')
+    const prompt = String(formData.get('prompt') ?? '').trim()
+
+    if (!(file instanceof File)) {
+      throw new Error('Expected CSV file in form field "file".')
+    }
+    if (!prompt) {
+      throw new Error('Prompt is required in form field "prompt".')
+    }
+
+    const csvText = await file.text()
+    return {
+      interactions: parseInteractionsCsv(csvText).rows,
+      prompt,
+    }
+  }
+
+  if (contentType.includes('application/json')) {
+    const body = (await request.json()) as { interactions?: InteractionRow[]; prompt?: string }
+    const prompt = (body.prompt ?? '').trim()
+
+    if (!body.interactions || !Array.isArray(body.interactions)) {
+      throw new Error('JSON body must include interactions array.')
+    }
+    if (!prompt) {
+      throw new Error('JSON body must include a non-empty prompt.')
+    }
+
+    return {
+      interactions: body.interactions,
+      prompt,
+    }
   }
 
   throw new Error('Unsupported content-type. Use multipart/form-data or application/json.')
@@ -89,6 +138,29 @@ review.post('/review', async (c) => {
     return c.json(
       {
         error: error instanceof Error ? error.message : 'Unable to process review request.',
+      },
+      400,
+    )
+  }
+})
+
+// api/v1/review/action
+review.post('/review/action', async (c) => {
+  try {
+    const { interactions, prompt } = await parseRequestWithPrompt(c.req.raw)
+    const output = await runComplianceActionWithMinimax(interactions, prompt)
+
+    const payload: ComplianceActionResponse = {
+      prompt,
+      output,
+    }
+
+    return c.json(payload)
+  } catch (error) {
+    return c.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to process compliance action request.',
       },
       400,
     )

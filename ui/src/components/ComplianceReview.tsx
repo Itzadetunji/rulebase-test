@@ -25,16 +25,36 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { apiClient, REVIEW_URL } from "@/lib/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiClient, REVIEW_ACTION_URL, REVIEW_URL } from "@/lib/api";
 import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { cn } from "@/lib/utils";
 import type {
+	ComplianceActionPayload,
 	ReviewPayload,
 	ReviewResult,
 	RuleFinding,
 } from "@/types/compliance";
 
 type ErrorBody = { error?: string };
+
+const SAMPLE_CSV_HEADERS = [
+	"interaction_id",
+	"timestamp",
+	"channel",
+	"agent_id",
+	"customer_id",
+	"transcript",
+];
+
+const SAMPLE_CSV_ROW = [
+	"INT-1001",
+	"2026-05-02T09:30:00Z",
+	"phone",
+	"AGENT-007",
+	"CUST-2249",
+	"Hello, I can help explain your options and next steps.",
+];
 
 function findingStatusVariant(
 	status: RuleFinding["status"],
@@ -90,23 +110,45 @@ function FindingsList({ findings }: { findings: RuleFinding[] }) {
 
 export function ComplianceReview() {
 	const [file, setFile] = useState<File | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [statusMessage, setStatusMessage] = useState("");
-	const [payload, setPayload] = useState<ReviewPayload | null>(null);
+	const [activeTab, setActiveTab] = useState("review");
+	const [reviewLoading, setReviewLoading] = useState(false);
+	const [reviewStatusMessage, setReviewStatusMessage] = useState("");
+	const [reviewPayload, setReviewPayload] = useState<ReviewPayload | null>(null);
+	const [actionPrompt, setActionPrompt] = useState("");
+	const [actionLoading, setActionLoading] = useState(false);
+	const [actionStatusMessage, setActionStatusMessage] = useState("");
+	const [actionPayload, setActionPayload] =
+		useState<ComplianceActionPayload | null>(null);
 	const [openIndex, setOpenIndex] = useState<number | null>(null);
+	const loading = reviewLoading || actionLoading;
 
 	const toggleRow = (index: number) => {
 		setOpenIndex((prev) => (prev === index ? null : index));
 	};
 
+	function downloadSampleCsv() {
+		const csv = `${SAMPLE_CSV_HEADERS.join(",")}\n${SAMPLE_CSV_ROW.map(
+			(value) => JSON.stringify(value),
+		).join(",")}\n`;
+		const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = "sample-interactions.csv";
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+	}
+
 	async function runReview() {
 		if (!file) {
-			setStatusMessage("Please choose a CSV file.");
+			setReviewStatusMessage("Please choose a CSV file.");
 			return;
 		}
-		setLoading(true);
-		setStatusMessage("Running compliance review…");
-		setPayload(null);
+		setReviewLoading(true);
+		setReviewStatusMessage("Running compliance review…");
+		setReviewPayload(null);
 		setOpenIndex(null);
 		try {
 			const formData = new FormData();
@@ -115,23 +157,58 @@ export function ComplianceReview() {
 				REVIEW_URL,
 				formData,
 			);
-			setPayload(data);
-			setStatusMessage("Review completed.");
+			setReviewPayload(data);
+			setReviewStatusMessage("Review completed.");
 		} catch (error) {
 			let message = "Unexpected error.";
 			if (axios.isAxiosError(error)) {
 				const body = error.response?.data as ErrorBody | undefined;
 				message = body?.error ?? error.response?.statusText ?? error.message;
 			}
-			setStatusMessage(message);
-			setPayload(null);
+			setReviewStatusMessage(message);
+			setReviewPayload(null);
 		} finally {
-			setLoading(false);
+			setReviewLoading(false);
 		}
 	}
 
-	const results: ReviewResult[] = payload?.results ?? [];
-	const summary = payload?.summary;
+	async function runComplianceAction() {
+		if (!file) {
+			setActionStatusMessage("Please choose a CSV file.");
+			return;
+		}
+		if (!actionPrompt.trim()) {
+			setActionStatusMessage("Please enter a compliance action prompt.");
+			return;
+		}
+		setActionLoading(true);
+		setActionStatusMessage("Running compliance action…");
+		setActionPayload(null);
+		try {
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("prompt", actionPrompt.trim());
+			const { data } = await apiClient.post<ComplianceActionPayload>(
+				REVIEW_ACTION_URL,
+				formData,
+			);
+			setActionPayload(data);
+			setActionStatusMessage("Compliance action completed.");
+		} catch (error) {
+			let message = "Unexpected error.";
+			if (axios.isAxiosError(error)) {
+				const body = error.response?.data as ErrorBody | undefined;
+				message = body?.error ?? error.response?.statusText ?? error.message;
+			}
+			setActionStatusMessage(message);
+			setActionPayload(null);
+		} finally {
+			setActionLoading(false);
+		}
+	}
+
+	const results: ReviewResult[] = reviewPayload?.results ?? [];
+	const summary = reviewPayload?.summary;
 
 	return (
 		<div className="bg-background mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-6 lg:px-8 antialiased">
@@ -140,19 +217,14 @@ export function ComplianceReview() {
 					Compliance review: UDAAP (Unfair, Deceptive, or Abusive Acts or
 					Practices)
 				</h1>
-				<p className="text-muted-foreground max-w-xl text-xs leading-relaxed">
-					Upload a CSV of interactions and run analysis. The app calls{" "}
-					<code className="bg-muted rounded px-1 py-px font-mono text-[0.95em]">
-						POST {REVIEW_URL}
-					</code>{" "}
-					with{" "}
-					<code className="bg-muted rounded px-1 py-px font-mono">axios</code>.
-				</p>
 			</header>
 
 			<Card className="mb-6 shadow-sm ring-border/80">
 				<CardHeader className="border-border border-b pb-6">
-					<CardTitle>Upload & review</CardTitle>
+					<CardTitle>Upload CSV</CardTitle>
+					<CardDescription className="text-xs">
+						Attach one CSV once, then use either tab below.
+					</CardDescription>
 					<CardDescription className="text-xs">
 						Expected columns include{" "}
 						<code className="bg-muted px-1">
@@ -197,177 +269,280 @@ export function ComplianceReview() {
 					</div>
 					<Button
 						type="button"
-						onClick={() => void runReview()}
+						variant="outline"
+						onClick={downloadSampleCsv}
 						disabled={loading}
 					>
-						{loading ? "Running…" : "Run review"}
+						Download sample CSV
 					</Button>
 				</CardContent>
 			</Card>
 
-			{statusMessage ? (
-				<p
-					className={cn(
-						"mb-4 text-xs",
-						!payload &&
-							statusMessage !== "Review completed." &&
-							"text-destructive",
-					)}
+			<Tabs
+				value={activeTab}
+				onValueChange={setActiveTab}
+				className="w-full"
+			>
+				<TabsList className="mb-4">
+					<TabsTrigger value="review">UDAAP Review</TabsTrigger>
+					<TabsTrigger value="action">Compliance Prompt Action</TabsTrigger>
+				</TabsList>
+
+				<TabsContent
+					value="review"
+					className="space-y-4"
 				>
-					{statusMessage}
-				</p>
-			) : null}
+					<Card className="shadow-sm ring-border/80">
+						<CardHeader className="border-border border-b pb-4">
+							<CardTitle>Run general UDAAP review</CardTitle>
+							<CardDescription className="text-xs">
+								Analyze all rows in the attached CSV with standard compliance
+								rules.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="pt-4">
+							<Button
+								type="button"
+								onClick={() => void runReview()}
+								disabled={loading}
+							>
+								{reviewLoading ? "Running…" : "Run review"}
+							</Button>
+						</CardContent>
+					</Card>
 
-			{summary ? (
-				<div className="mb-6 flex flex-wrap gap-2 text-xs">
-					<Badge
-						variant="secondary"
-						className="h-7 px-2.5"
-					>
-						Total:{" "}
-						<span className="ml-1 font-semibold">{summary.totalRows}</span>
-					</Badge>
-					<Badge
-						variant="outline"
-						className="h-7 border-transparent bg-emerald-50 px-2.5 text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-500/25"
-					>
-						Compliant:{" "}
-						<span className="ml-1 font-semibold">{summary.compliantRows}</span>
-					</Badge>
-					<Badge
-						variant="outline"
-						className="h-7 border-transparent bg-red-50 px-2.5 text-red-800 ring-1 ring-red-600/20 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-500/25"
-					>
-						Flagged:{" "}
-						<span className="ml-1 font-semibold">{summary.flaggedRows}</span>
-					</Badge>
-				</div>
-			) : null}
+					{reviewStatusMessage ? (
+						<p
+							className={cn(
+								"text-xs",
+								!reviewPayload &&
+									reviewStatusMessage !== "Review completed." &&
+									"text-destructive",
+							)}
+						>
+							{reviewStatusMessage}
+						</p>
+					) : null}
 
-			<Card className="overflow-hidden shadow-sm ring-border/80">
-				<CardHeader className="border-border border-b pb-4">
-					<CardTitle>Review results</CardTitle>
-					<CardDescription className="text-xs">
-						Click a row to expand findings and transcript metadata.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="px-4 pb-4 pt-0">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className="min-w-[100px]">
-									<span className="inline-flex items-center gap-2">
-										<UsersIcon className="text-muted-foreground size-4" />
-										Employee
-									</span>
-								</TableHead>
-								<TableHead>
-									<span className="inline-flex items-center gap-2">
-										<ChartBarIcon className="text-muted-foreground size-4" />
-										Risk level
-									</span>
-								</TableHead>
-								<TableHead>
-									<span className="inline-flex items-center gap-2">
-										<Phone className="text-muted-foreground size-4" />
-										Ticket ID
-									</span>
-								</TableHead>
-								<TableHead>
-									<span className="inline-flex items-center gap-2">
-										<BuildingsIcon className="text-muted-foreground size-4" />
-										Customer
-									</span>
-								</TableHead>
-								<TableHead className="min-w-[140px]">
-									<span className="inline-flex items-center gap-2">
-										<ListIcon className="text-muted-foreground size-4" />
-										Population category
-									</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{!results.length && !payload && !loading ? (
-								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="text-muted-foreground py-12 text-center text-xs"
-									>
-										No rows yet. Upload a CSV and run review.
-									</TableCell>
-								</TableRow>
-							) : null}
+					{summary ? (
+						<div className="flex flex-wrap gap-2 text-xs">
+							<Badge
+								variant="secondary"
+								className="h-7 px-2.5"
+							>
+								Total:{" "}
+								<span className="ml-1 font-semibold">{summary.totalRows}</span>
+							</Badge>
+							<Badge
+								variant="outline"
+								className="h-7 border-transparent bg-emerald-50 px-2.5 text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-500/25"
+							>
+								Compliant:{" "}
+								<span className="ml-1 font-semibold">
+									{summary.compliantRows}
+								</span>
+							</Badge>
+							<Badge
+								variant="outline"
+								className="h-7 border-transparent bg-red-50 px-2.5 text-red-800 ring-1 ring-red-600/20 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-500/25"
+							>
+								Flagged:{" "}
+								<span className="ml-1 font-semibold">{summary.flaggedRows}</span>
+							</Badge>
+						</div>
+					) : null}
 
-							{!results.length && payload && !loading ? (
-								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="text-muted-foreground py-12 text-center text-xs"
-									>
-										No results.
-									</TableCell>
-								</TableRow>
-							) : null}
-
-							{results.map((result, index) => {
-								const risk = riskFromResult(result);
-								const open = openIndex === index;
-								return (
-									<Fragment key={`${result.interactionId}-${index}`}>
-										<TableRow
-											className="hover:bg-muted/40 cursor-pointer"
-											onClick={() => toggleRow(index)}
-											aria-expanded={open}
-											data-state={open ? "selected" : undefined}
-										>
-											<TableCell className="font-medium">
-												{result.agentId ?? "—"}
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant="outline"
-													className={cn(
-														"h-6 border-transparent px-2.5 font-medium ring-1 ring-inset",
-														risk.badgeClass,
-													)}
-												>
-													{risk.label}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-mono text-[0.8rem]">
-												{result.interactionId}
-											</TableCell>
-											<TableCell>{result.customerId ?? "—"}</TableCell>
-											<TableCell className="whitespace-normal">
-												{populationCategory(result.channel)}
+					<Card className="overflow-hidden shadow-sm ring-border/80">
+						<CardHeader className="border-border border-b pb-4">
+							<CardTitle>Review results</CardTitle>
+							<CardDescription className="text-xs">
+								Click a row to expand findings and transcript metadata.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="px-4 pb-4 pt-0">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead className="min-w-[100px]">
+											<span className="inline-flex items-center gap-2">
+												<UsersIcon className="text-muted-foreground size-4" />
+												Employee
+											</span>
+										</TableHead>
+										<TableHead>
+											<span className="inline-flex items-center gap-2">
+												<ChartBarIcon className="text-muted-foreground size-4" />
+												Risk level
+											</span>
+										</TableHead>
+										<TableHead>
+											<span className="inline-flex items-center gap-2">
+												<Phone className="text-muted-foreground size-4" />
+												Ticket ID
+											</span>
+										</TableHead>
+										<TableHead>
+											<span className="inline-flex items-center gap-2">
+												<BuildingsIcon className="text-muted-foreground size-4" />
+												Customer
+											</span>
+										</TableHead>
+										<TableHead className="min-w-[140px]">
+											<span className="inline-flex items-center gap-2">
+												<ListIcon className="text-muted-foreground size-4" />
+												Population category
+											</span>
+										</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{!results.length && !reviewPayload && !reviewLoading ? (
+										<TableRow>
+											<TableCell
+												colSpan={5}
+												className="text-muted-foreground py-12 text-center text-xs"
+											>
+												No rows yet. Upload a CSV and run review.
 											</TableCell>
 										</TableRow>
-										{open ? (
-											<TableRow className="bg-muted/20 hover:bg-muted/20">
-												<TableCell
-													colSpan={5}
-													className="whitespace-normal py-4"
+									) : null}
+
+									{!results.length && reviewPayload && !reviewLoading ? (
+										<TableRow>
+											<TableCell
+												colSpan={5}
+												className="text-muted-foreground py-12 text-center text-xs"
+											>
+												No results.
+											</TableCell>
+										</TableRow>
+									) : null}
+
+									{results.map((result, index) => {
+										const risk = riskFromResult(result);
+										const open = openIndex === index;
+										return (
+											<Fragment key={`${result.interactionId}-${index}`}>
+												<TableRow
+													className="hover:bg-muted/40 cursor-pointer"
+													onClick={() => toggleRow(index)}
+													aria-expanded={open}
+													data-state={open ? "selected" : undefined}
 												>
-													<p className="text-muted-foreground mb-3 text-xs">
-														{result.channel} · {result.timestamp}
-													</p>
-													{result.error ? (
-														<p className="text-destructive mb-3 text-xs font-medium">
-															Evaluation error: {result.error}
-														</p>
-													) : null}
-													<FindingsList findings={result.findings ?? []} />
-												</TableCell>
-											</TableRow>
-										) : null}
-									</Fragment>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+													<TableCell className="font-medium">
+														{result.agentId ?? "—"}
+													</TableCell>
+													<TableCell>
+														<Badge
+															variant="outline"
+															className={cn(
+																"h-6 border-transparent px-2.5 font-medium ring-1 ring-inset",
+																risk.badgeClass,
+															)}
+														>
+															{risk.label}
+														</Badge>
+													</TableCell>
+													<TableCell className="font-mono text-[0.8rem]">
+														{result.interactionId}
+													</TableCell>
+													<TableCell>{result.customerId ?? "—"}</TableCell>
+													<TableCell className="whitespace-normal">
+														{populationCategory(result.channel)}
+													</TableCell>
+												</TableRow>
+												{open ? (
+													<TableRow className="bg-muted/20 hover:bg-muted/20">
+														<TableCell
+															colSpan={5}
+															className="whitespace-normal py-4"
+														>
+															<p className="text-muted-foreground mb-3 text-xs">
+																{result.channel} · {result.timestamp}
+															</p>
+															{result.error ? (
+																<p className="text-destructive mb-3 text-xs font-medium">
+																	Evaluation error: {result.error}
+																</p>
+															) : null}
+															<FindingsList findings={result.findings ?? []} />
+														</TableCell>
+													</TableRow>
+												) : null}
+											</Fragment>
+										);
+									})}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent
+					value="action"
+					className="space-y-4"
+				>
+					<Card className="shadow-sm ring-border/80">
+						<CardHeader className="border-border border-b pb-4">
+							<CardTitle>Prompt AI with the same CSV</CardTitle>
+							<CardDescription className="text-xs">
+								Enter a compliance-specific action, like identifying high-risk
+								rows or drafting compliant rewrites.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-3 pt-4">
+							<div className="space-y-1.5">
+								<Label htmlFor="action-prompt">Compliance prompt</Label>
+								<textarea
+									id="action-prompt"
+									value={actionPrompt}
+									onChange={(e) => setActionPrompt(e.target.value)}
+									placeholder="Example: List the top 5 highest-risk interactions and explain why."
+									disabled={loading}
+									rows={4}
+									className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-24 w-full border px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px]"
+								/>
+							</div>
+							<Button
+								type="button"
+								onClick={() => void runComplianceAction()}
+								disabled={loading}
+							>
+								{actionLoading ? "Running…" : "Run action"}
+							</Button>
+						</CardContent>
+					</Card>
+
+					{actionStatusMessage ? (
+						<p
+							className={cn(
+								"text-xs",
+								!actionPayload &&
+									actionStatusMessage !== "Compliance action completed." &&
+									"text-destructive",
+							)}
+						>
+							{actionStatusMessage}
+						</p>
+					) : null}
+
+					{actionPayload ? (
+						<Card className="shadow-sm ring-border/80">
+							<CardHeader className="border-border border-b pb-4">
+								<CardTitle>Action output</CardTitle>
+								<CardDescription className="text-xs">
+									Generated from your current CSV plus prompt.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="pt-4">
+								<p className="bg-muted/40 whitespace-pre-wrap rounded-md p-3 text-sm leading-relaxed">
+									{actionPayload.output}
+								</p>
+							</CardContent>
+						</Card>
+					) : null}
+				</TabsContent>
+			</Tabs>
 		</div>
 	);
 }

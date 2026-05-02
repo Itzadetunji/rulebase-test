@@ -1,6 +1,11 @@
 import OpenAI from 'openai'
+import {
+  buildComplianceActionSystemPrompt,
+  buildComplianceActionUserPrompt,
+  buildComplianceSystemPrompt,
+  buildComplianceUserPrompt,
+} from '../compliance/prompt'
 import { BASE_COMPLIANCE_RULES } from '../compliance/rules'
-import { buildComplianceSystemPrompt, buildComplianceUserPrompt } from '../compliance/prompt'
 import type { InteractionRow, ReviewOverallStatus, RuleFinding } from '../compliance/types'
 
 type ParsedComplianceOutput = {
@@ -10,6 +15,19 @@ type ParsedComplianceOutput = {
 
 const DEFAULT_BASE_URL = 'https://api.minimax.io/v1'
 const DEFAULT_MODEL = 'MiniMax-M2.7'
+
+const getClientConfig = () => {
+  const apiKey = process.env.MINIMAX_API_KEY
+  if (!apiKey) {
+    throw new Error('MINIMAX_API_KEY is missing.')
+  }
+
+  return {
+    apiKey,
+    baseUrl: process.env.MINIMAX_BASE_URL ?? DEFAULT_BASE_URL,
+    model: process.env.MINIMAX_MODEL ?? DEFAULT_MODEL,
+  }
+}
 
 const extractJsonPayload = (content: string) => {
   const start = content.indexOf('{')
@@ -63,13 +81,7 @@ const normalizeFindings = (findings: unknown): RuleFinding[] => {
 export const evaluateInteractionWithMinimax = async (
   interaction: InteractionRow,
 ): Promise<ParsedComplianceOutput> => {
-  const apiKey = process.env.MINIMAX_API_KEY
-  if (!apiKey) {
-    throw new Error('MINIMAX_API_KEY is missing.')
-  }
-
-  const baseUrl = process.env.MINIMAX_BASE_URL ?? DEFAULT_BASE_URL
-  const model = process.env.MINIMAX_MODEL ?? DEFAULT_MODEL
+  const { apiKey, baseUrl, model } = getClientConfig()
 
   const client = new OpenAI({
     apiKey,
@@ -109,5 +121,44 @@ export const evaluateInteractionWithMinimax = async (
   return {
     overallStatus: normalizeStatus(parsed.overallStatus ?? 'flagged'),
     findings,
+  }
+}
+
+export const runComplianceActionWithMinimax = async (
+  interactions: InteractionRow[],
+  instruction: string,
+): Promise<string> => {
+  const { apiKey, baseUrl, model } = getClientConfig()
+
+  const client = new OpenAI({
+    apiKey,
+    baseURL: baseUrl,
+  })
+
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: buildComplianceActionSystemPrompt(),
+        },
+        {
+          role: 'user',
+          content: buildComplianceActionUserPrompt(interactions, instruction),
+        },
+      ],
+    })
+
+    const messageContent = completion.choices?.[0]?.message?.content
+    if (!messageContent || typeof messageContent !== 'string') {
+      throw new Error('Minimax response content was empty.')
+    }
+
+    return messageContent.trim()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown Minimax API error.'
+    throw new Error(`Minimax request failed: ${message}`)
   }
 }

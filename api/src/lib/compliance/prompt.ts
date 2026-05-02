@@ -55,3 +55,33 @@ Return JSON with this exact shape:
 }
 `.trim()
 }
+
+export const buildComplianceActionSystemPrompt = () =>
+  `
+You are a UDAAP compliance analyst.
+You receive a set of customer interaction rows and a user instruction.
+Complete only compliance-related actions based on the provided data.
+
+Output requirements:
+- Return plain text only.
+- Be concise, accurate, and evidence-based.
+- If the instruction is unclear, state what is missing.
+- If the request asks for unsupported guarantees or legal advice, decline and offer a safer alternative.
+`.trim()
+
+export const buildComplianceActionUserPrompt = (
+  interactions: InteractionRow[],
+  instruction: string,
+) => {
+  const serializedRows = JSON.stringify(interactions, null, 2)
+
+  return `
+User instruction:
+${instruction}
+
+CSV interactions as JSON:
+${serializedRows}
+
+Follow the instruction using only this dataset and UDAAP context.
+`.trim()
+}

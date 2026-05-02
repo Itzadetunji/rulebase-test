@@ -33,3 +33,8 @@ export type ReviewPayload = {
 	summary: ReviewSummary
 	results: ReviewResult[]
 }
+
+export type ComplianceActionPayload = {
+	prompt: string
+	output: string
+}
