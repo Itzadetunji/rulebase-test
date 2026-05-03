@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { StatusCodes } from 'http-status-codes'
 import type { ComplianceRule } from '../lib/compliance/types'
 import { createRule, deleteRule, getRules, upsertRule } from '../lib/rules/redis'
 
@@ -16,7 +17,7 @@ customRules.get('/custom-rules', async (c) => {
       {
         error: error instanceof Error ? error.message : 'Unable to fetch custom rules.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })
@@ -38,7 +39,7 @@ customRules.post('/custom-rules', async (c) => {
       {
         error: error instanceof Error ? error.message : 'Unable to create custom rule.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })
@@ -67,7 +68,7 @@ customRules.patch('/custom-rules/:ruleId', async (c) => {
       {
         error: error instanceof Error ? error.message : 'Unable to upsert custom rule.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })
@@ -88,7 +89,7 @@ customRules.delete('/custom-rules/:ruleId', async (c) => {
       {
         error: error instanceof Error ? error.message : 'Unable to delete custom rule.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })

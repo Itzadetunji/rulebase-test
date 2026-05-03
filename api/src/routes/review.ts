@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { StatusCodes } from 'http-status-codes'
 import { evaluateInteractionWithMinimax, runComplianceActionWithMinimax } from '../lib/ai/minimax'
 import type {
   ComplianceActionResponse,
@@ -163,7 +164,7 @@ review.post('/review', async (c) => {
       {
         error: error instanceof Error ? error.message : 'Unable to process review request.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })
@@ -186,7 +187,7 @@ review.post('/review/action', async (c) => {
         error:
           error instanceof Error ? error.message : 'Unable to process compliance action request.',
       },
-      400,
+      StatusCodes.BAD_REQUEST,
     )
   }
 })
