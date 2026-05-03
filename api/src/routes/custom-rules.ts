@@ -1,22 +1,14 @@
 import { Hono } from 'hono'
-import type { ComplianceRule, RuleSetMode } from '../lib/compliance/types'
-import { deleteRule, getMode, getRules, setMode, upsertRule } from '../lib/rules/redis'
+import type { ComplianceRule } from '../lib/compliance/types'
+import { createRule, deleteRule, getRules, upsertRule } from '../lib/rules/redis'
 
 const customRules = new Hono()
 
-const assertMode = (value: string): RuleSetMode => {
-  if (value === 'default' || value === 'custom' || value === 'combined') {
-    return value
-  }
-  throw new Error('mode must be one of: default, custom, combined.')
-}
-
 customRules.get('/custom-rules', async (c) => {
   try {
-    const [rules, mode] = await Promise.all([getRules(), getMode()])
+    const rules = await getRules()
 
     return c.json({
-      mode,
       rules,
     })
   } catch (error) {
@@ -29,20 +21,22 @@ customRules.get('/custom-rules', async (c) => {
   }
 })
 
-customRules.patch('/custom-rules/mode', async (c) => {
+customRules.post('/custom-rules', async (c) => {
   try {
-    const body = (await c.req.json()) as { mode?: string }
-
-    const mode = assertMode(body.mode ?? '')
-    const nextMode = await setMode(mode)
+    const body = (await c.req.json()) as { title?: string; description?: string }
+    const { rules, createdRule } = await createRule({
+      title: body.title ?? '',
+      description: body.description ?? '',
+    })
 
     return c.json({
-      mode: nextMode,
+      createdRule,
+      rules,
     })
   } catch (error) {
     return c.json(
       {
-        error: error instanceof Error ? error.message : 'Unable to update custom rule mode.',
+        error: error instanceof Error ? error.message : 'Unable to create custom rule.',
       },
       400,
     )
@@ -66,7 +60,6 @@ customRules.patch('/custom-rules/:ruleId', async (c) => {
     const rules = await upsertRule(rule)
 
     return c.json({
-      mode: await getMode(),
       rules,
     })
   } catch (error) {
@@ -88,7 +81,6 @@ customRules.delete('/custom-rules/:ruleId', async (c) => {
 
     const { rules } = await deleteRule(ruleId)
     return c.json({
-      mode: await getMode(),
       rules,
     })
   } catch (error) {

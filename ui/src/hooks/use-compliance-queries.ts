@@ -1,12 +1,13 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { apiClient, REVIEW_ACTION_URL, REVIEW_URL } from "@/lib/api";
-import type { ComplianceActionPayload, ReviewPayload } from "@/types/compliance";
+import type { ComplianceActionPayload, CustomRuleMode, ReviewPayload } from "@/types/compliance";
 
 type ErrorBody = { error?: string };
 
 export type RunReviewInput = {
 	file: File | null;
+	mode: CustomRuleMode;
 };
 
 export type RunActionInput = {
@@ -32,6 +33,7 @@ export const useRunReviewMutation = () => {
 
 			const formData = new FormData();
 			formData.append("file", input.file);
+			formData.append("mode", input.mode);
 			const response = await apiClient.post<ReviewPayload>(REVIEW_URL, formData);
 			return response.data;
 		},

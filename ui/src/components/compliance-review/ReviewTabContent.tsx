@@ -87,6 +87,7 @@ function FindingsList({ findings }: { findings: RuleFinding[] }) {
 
 export function ReviewTabContent() {
 	const file = useComplianceReviewStore((state) => state.file);
+	const customRulesMode = useComplianceReviewStore((state) => state.customRulesMode);
 	const openIndex = useComplianceReviewStore((state) => state.openIndex);
 	const toggleRow = useComplianceReviewStore((state) => state.toggleRow);
 	const runReviewMutation = useRunReviewMutation();
@@ -97,21 +98,15 @@ export function ReviewTabContent() {
 	const onRunReview = async () => {
 		await runReviewMutation.mutateAsync({
 			file,
+			mode: customRulesMode,
 		});
 	};
-
-	let reviewStatusMessage = "";
-	let reviewStatusKind: "error" | "success" = "success";
-
-	if (runReviewMutation.isError) {
-		reviewStatusMessage = getMutationErrorMessage(runReviewMutation.error);
-		reviewStatusKind = "error";
-	}
-
-	if (runReviewMutation.isSuccess) {
-		reviewStatusMessage = "Review completed.";
-		reviewStatusKind = "success";
-	}
+	const reviewStatusMessage = runReviewMutation.isError
+		? getMutationErrorMessage(runReviewMutation.error)
+		: runReviewMutation.isSuccess
+			? "Review completed."
+			: "";
+	const reviewStatusKind = runReviewMutation.isError ? "error" : "success";
 
 	return (
 		<TabsContent

@@ -5,34 +5,56 @@ import type {
   InteractionRow,
   ReviewResponse,
   ReviewResult,
+  RuleSetMode,
 } from '../lib/compliance/types'
 import { parseInteractionsCsv } from '../lib/csv/parse'
 import { resolveRulesByMode } from '../lib/rules/resolve'
 
 const review = new Hono()
 
-const parseJsonInteractions = async (request: Request): Promise<InteractionRow[]> => {
-  const body = (await request.json()) as { interactions?: InteractionRow[] }
+const parseRuleMode = (value: unknown): RuleSetMode => {
+  const mode = String(value ?? '').trim()
+  if (mode === 'default' || mode === 'custom' || mode === 'combined') {
+    return mode
+  }
+  return 'default'
+}
+
+const parseJsonInteractions = async (
+  request: Request,
+): Promise<{ interactions: InteractionRow[]; mode: RuleSetMode }> => {
+  const body = (await request.json()) as { interactions?: InteractionRow[]; mode?: RuleSetMode }
   if (!body.interactions || !Array.isArray(body.interactions)) {
     throw new Error('JSON body must include interactions array.')
   }
 
-  return body.interactions
+  return {
+    interactions: body.interactions,
+    mode: parseRuleMode(body.mode),
+  }
 }
 
-const parseMultipartCsv = async (request: Request): Promise<InteractionRow[]> => {
+const parseMultipartCsv = async (
+  request: Request,
+): Promise<{ interactions: InteractionRow[]; mode: RuleSetMode }> => {
   const formData = await request.formData()
   const file = formData.get('file')
+  const mode = parseRuleMode(formData.get('mode'))
 
   if (!(file instanceof File)) {
     throw new Error('Expected CSV file in form field "file".')
   }
 
   const csvText = await file.text()
-  return parseInteractionsCsv(csvText).rows
+  return {
+    interactions: parseInteractionsCsv(csvText).rows,
+    mode,
+  }
 }
 
-const parseRequestInteractions = async (request: Request): Promise<InteractionRow[]> => {
+const parseRequestInteractions = async (
+  request: Request,
+): Promise<{ interactions: InteractionRow[]; mode: RuleSetMode }> => {
   const contentType = request.headers.get('content-type') ?? ''
 
   if (contentType.includes('multipart/form-data')) {
@@ -93,8 +115,8 @@ const parseRequestWithPrompt = async (
 // api/v1/review
 review.post('/review', async (c) => {
   try {
-    const interactions = await parseRequestInteractions(c.req.raw)
-    const { rules } = await resolveRulesByMode()
+    const { interactions, mode } = await parseRequestInteractions(c.req.raw)
+    const { rules } = await resolveRulesByMode(mode)
 
     const results: ReviewResult[] = []
     for (const interaction of interactions) {

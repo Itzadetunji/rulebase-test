@@ -1,4 +1,4 @@
-import type { ComplianceRule, RuleSetMode } from '../compliance/types'
+import type { ComplianceRule } from '../compliance/types'
 
 declare const Bun: {
   redis: {
@@ -7,10 +7,37 @@ declare const Bun: {
   }
 }
 
-const DEFAULT_MODE: RuleSetMode = 'default'
+const REDIS_OP_TIMEOUT_MS = 500
 
 const RULES_KEY = 'rules:items'
-const MODE_KEY = 'rules:mode'
+const inMemoryStore = new Map<string, string>()
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => {
+        reject(new Error('Redis operation timed out.'))
+      }, timeoutMs),
+    ),
+  ])
+}
+
+const safeGet = async (key: string): Promise<string | null> => {
+  try {
+    return await withTimeout(Bun.redis.get(key), REDIS_OP_TIMEOUT_MS)
+  } catch {
+    return inMemoryStore.get(key) ?? null
+  }
+}
+
+const safeSet = async (key: string, value: string): Promise<void> => {
+  try {
+    await withTimeout(Bun.redis.set(key, value), REDIS_OP_TIMEOUT_MS)
+  } catch {
+    inMemoryStore.set(key, value)
+  }
+}
 
 const parseRules = (value: string | null): ComplianceRule[] => {
   if (!value) return []
@@ -30,20 +57,13 @@ const parseRules = (value: string | null): ComplianceRule[] => {
     .filter((rule): rule is ComplianceRule => Boolean(rule))
 }
 
-const parseMode = (value: string | null): RuleSetMode => {
-  if (value === 'default' || value === 'custom' || value === 'combined') {
-    return value
-  }
-  return DEFAULT_MODE
-}
-
 export const getRules = async (): Promise<ComplianceRule[]> => {
-  const value = await Bun.redis.get(RULES_KEY)
+  const value = await safeGet(RULES_KEY)
   return parseRules(value)
 }
 
 export const setRules = async (rules: ComplianceRule[]): Promise<void> => {
-  await Bun.redis.set(RULES_KEY, JSON.stringify(rules))
+  await safeSet(RULES_KEY, JSON.stringify(rules))
 }
 
 export const upsertRule = async (rule: ComplianceRule): Promise<ComplianceRule[]> => {
@@ -69,6 +89,34 @@ export const upsertRule = async (rule: ComplianceRule): Promise<ComplianceRule[]
   return existingRules
 }
 
+export const createRule = async (
+  rule: Omit<ComplianceRule, 'id'>,
+): Promise<{ rules: ComplianceRule[]; createdRule: ComplianceRule }> => {
+  const normalizedRule = {
+    title: rule.title.trim(),
+    description: rule.description.trim(),
+  }
+
+  if (!normalizedRule.title || !normalizedRule.description) {
+    throw new Error('Rule title and description are required.')
+  }
+
+  const createdRule: ComplianceRule = {
+    id: crypto.randomUUID(),
+    title: normalizedRule.title,
+    description: normalizedRule.description,
+  }
+
+  const existingRules = await getRules()
+  existingRules.push(createdRule)
+  await setRules(existingRules)
+
+  return {
+    rules: existingRules,
+    createdRule,
+  }
+}
+
 export const deleteRule = async (
   ruleId: string,
 ): Promise<{ rules: ComplianceRule[]; removed: boolean }> => {
@@ -89,14 +137,4 @@ export const deleteRule = async (
     rules: nextRules,
     removed,
   }
-}
-
-export const getMode = async (): Promise<RuleSetMode> => {
-  const value = await Bun.redis.get(MODE_KEY)
-  return parseMode(value)
-}
-
-export const setMode = async (mode: RuleSetMode): Promise<RuleSetMode> => {
-  await Bun.redis.set(MODE_KEY, mode)
-  return mode
 }

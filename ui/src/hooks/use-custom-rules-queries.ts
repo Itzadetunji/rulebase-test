@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient, CUSTOM_RULES_MODE_URL, CUSTOM_RULES_URL, customRuleByIdUrl } from "@/lib/api";
-import type {
-	ComplianceRule,
-	CustomRuleMode,
-	CustomRulesPayload,
-} from "@/types/compliance";
+import { apiClient, CUSTOM_RULES_URL, customRuleByIdUrl } from "@/lib/api";
+import type { ComplianceRule, CustomRulesPayload } from "@/types/compliance";
 
 const CUSTOM_RULES_QUERY_KEY = ["custom-rules"];
 
@@ -18,7 +14,24 @@ export const useGetRulesQuery = () => {
 	});
 };
 
-export const useUpsertRuleMutation = () => {
+export const useCreateRuleMutation = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (rule: Omit<ComplianceRule, "id">) => {
+			const response = await apiClient.post<CustomRulesPayload>(CUSTOM_RULES_URL, {
+				title: rule.title,
+				description: rule.description,
+			});
+			return response.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: CUSTOM_RULES_QUERY_KEY });
+		},
+	});
+};
+
+export const useUpdateRuleMutation = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
@@ -45,23 +58,6 @@ export const useDeleteRuleMutation = () => {
 		mutationFn: async (ruleId: string) => {
 			const response = await apiClient.delete<CustomRulesPayload>(
 				customRuleByIdUrl(ruleId),
-			);
-			return response.data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: CUSTOM_RULES_QUERY_KEY });
-		},
-	});
-};
-
-export const useSetRuleModeMutation = () => {
-	const queryClient = useQueryClient();
-
-	return useMutation({
-		mutationFn: async (mode: CustomRuleMode) => {
-			const response = await apiClient.patch<{ mode: CustomRuleMode }>(
-				CUSTOM_RULES_MODE_URL,
-				{ mode },
 			);
 			return response.data;
 		},

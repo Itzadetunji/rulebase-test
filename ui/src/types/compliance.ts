@@ -48,6 +48,5 @@ export type ComplianceRule = {
 }
 
 export type CustomRulesPayload = {
-	mode: CustomRuleMode
 	rules: ComplianceRule[]
 }

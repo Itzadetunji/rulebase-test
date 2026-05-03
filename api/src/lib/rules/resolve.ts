@@ -1,6 +1,6 @@
 import { BASE_COMPLIANCE_RULES } from '../compliance/rules'
 import type { ComplianceRule, RuleSetMode } from '../compliance/types'
-import { getMode, getRules } from './redis'
+import { getRules } from './redis'
 
 const dedupeRules = (rules: ComplianceRule[]): ComplianceRule[] => {
   const byId = new Map<string, ComplianceRule>()
@@ -10,11 +10,13 @@ const dedupeRules = (rules: ComplianceRule[]): ComplianceRule[] => {
   return [...byId.values()]
 }
 
-export const resolveRulesByMode = async (): Promise<{
+export const resolveRulesByMode = async (
+  mode: RuleSetMode,
+): Promise<{
   mode: RuleSetMode
   rules: ComplianceRule[]
 }> => {
-  const [mode, customRules] = await Promise.all([getMode(), getRules()])
+  const customRules = await getRules()
 
   if (mode === 'custom') {
     return {

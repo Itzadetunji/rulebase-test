@@ -35,19 +35,14 @@ export function ActionTabContent() {
 			prompt: actionPrompt,
 		});
 	};
-
-	let actionStatusMessage = "";
-	let actionStatusKind: "error" | "success" = "success";
-
-	if (runComplianceActionMutation.isError) {
-		actionStatusMessage = getMutationErrorMessage(runComplianceActionMutation.error);
-		actionStatusKind = "error";
-	}
-
-	if (runComplianceActionMutation.isSuccess) {
-		actionStatusMessage = "Compliance action completed.";
-		actionStatusKind = "success";
-	}
+	const actionStatusMessage = runComplianceActionMutation.isError
+		? getMutationErrorMessage(runComplianceActionMutation.error)
+		: runComplianceActionMutation.isSuccess
+			? "Compliance action completed."
+			: "";
+	const actionStatusKind = runComplianceActionMutation.isError
+		? "error"
+		: "success";
 
 	return (
 		<TabsContent
