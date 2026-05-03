@@ -38,3 +38,16 @@ export type ComplianceActionPayload = {
 	prompt: string
 	output: string
 }
+
+export type CustomRuleMode = "default" | "custom" | "combined"
+
+export type ComplianceRule = {
+	id: string
+	title: string
+	description: string
+}
+
+export type CustomRulesPayload = {
+	mode: CustomRuleMode
+	rules: ComplianceRule[]
+}

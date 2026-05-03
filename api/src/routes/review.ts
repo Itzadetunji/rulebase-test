@@ -7,6 +7,7 @@ import type {
   ReviewResult,
 } from '../lib/compliance/types'
 import { parseInteractionsCsv } from '../lib/csv/parse'
+import { resolveRulesByMode } from '../lib/rules/resolve'
 
 const review = new Hono()
 
@@ -93,11 +94,12 @@ const parseRequestWithPrompt = async (
 review.post('/review', async (c) => {
   try {
     const interactions = await parseRequestInteractions(c.req.raw)
+    const { rules } = await resolveRulesByMode()
 
     const results: ReviewResult[] = []
     for (const interaction of interactions) {
       try {
-        const reviewResult = await evaluateInteractionWithMinimax(interaction)
+        const reviewResult = await evaluateInteractionWithMinimax(interaction, rules)
         results.push({
           interactionId: interaction.interactionId,
           timestamp: interaction.timestamp,

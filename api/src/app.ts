@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import customRules from './routes/custom-rules'
 import review from './routes/review'
 
 const app = new Hono()
@@ -15,11 +16,12 @@ app.use(
   '*',
   cors({
     origin: [...devOrigins, ...(process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : [])],
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
   }),
 )
 app.route('/api/v1/', review)
+app.route('/api/v1/', customRules)
 
 app.get('/', (c) =>
   c.json({

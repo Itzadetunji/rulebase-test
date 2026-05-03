@@ -6,7 +6,12 @@ import {
   buildComplianceUserPrompt,
 } from '../compliance/prompt'
 import { BASE_COMPLIANCE_RULES } from '../compliance/rules'
-import type { InteractionRow, ReviewOverallStatus, RuleFinding } from '../compliance/types'
+import type {
+  ComplianceRule,
+  InteractionRow,
+  ReviewOverallStatus,
+  RuleFinding,
+} from '../compliance/types'
 
 type ParsedComplianceOutput = {
   overallStatus: ReviewOverallStatus
@@ -80,6 +85,7 @@ const normalizeFindings = (findings: unknown): RuleFinding[] => {
 
 export const evaluateInteractionWithMinimax = async (
   interaction: InteractionRow,
+  rules: ComplianceRule[] = BASE_COMPLIANCE_RULES,
 ): Promise<ParsedComplianceOutput> => {
   const { apiKey, baseUrl, model } = getClientConfig()
 
@@ -96,7 +102,7 @@ export const evaluateInteractionWithMinimax = async (
       messages: [
         {
           role: 'system',
-          content: buildComplianceSystemPrompt(BASE_COMPLIANCE_RULES),
+          content: buildComplianceSystemPrompt(rules),
         },
         {
           role: 'user',

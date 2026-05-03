@@ -4,6 +4,8 @@ export type ComplianceRule = {
   description: string
 }
 
+export type RuleSetMode = 'default' | 'custom' | 'combined'
+
 export type InteractionRow = {
   interactionId: string
   timestamp: string
