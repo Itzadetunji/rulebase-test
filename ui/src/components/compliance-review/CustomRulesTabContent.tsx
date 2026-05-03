@@ -36,7 +36,6 @@ import {
 import { useComplianceReviewStore } from "@/stores/compliance-review-store";
 import type { ComplianceRule, CustomRuleMode } from "@/types/compliance";
 import { toast } from "sonner";
-import { SharedCsvUploadCard } from "./SharedCsvUploadCard";
 
 export function CustomRulesTabContent() {
 	const getRulesQuery = useGetRulesQuery();
