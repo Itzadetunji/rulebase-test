@@ -25,7 +25,7 @@ export function ComplianceReview() {
 				<TabsList className="mb-4">
 					<TabsTrigger value="review">UDAAP Review</TabsTrigger>
 					<TabsTrigger value="action">Compliance Prompt Action</TabsTrigger>
-					<TabsTrigger value="custom-rules">Custom Rules</TabsTrigger>
+					<TabsTrigger value="custom-rules">Business Rules</TabsTrigger>
 				</TabsList>
 				<ReviewTabContent />
 				<ActionTabContent />

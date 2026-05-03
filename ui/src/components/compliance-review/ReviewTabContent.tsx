@@ -25,12 +25,16 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
-import { getMutationErrorMessage, useRunReviewMutation } from "@/hooks/use-compliance-queries";
+import {
+	getMutationErrorMessage,
+	useRunReviewMutation,
+} from "@/hooks/use-compliance-queries";
 import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { cn } from "@/lib/utils";
 import { useComplianceReviewStore } from "@/stores/compliance-review-store";
 import type { ReviewResult, RuleFinding } from "@/types/compliance";
 import { SharedCsvUploadCard } from "./SharedCsvUploadCard";
+import type { CustomRuleMode } from "@/types/compliance";
 
 function findingStatusVariant(
 	status: RuleFinding["status"],
@@ -87,7 +91,12 @@ function FindingsList({ findings }: { findings: RuleFinding[] }) {
 
 export function ReviewTabContent() {
 	const file = useComplianceReviewStore((state) => state.file);
-	const customRulesMode = useComplianceReviewStore((state) => state.customRulesMode);
+	const customRulesMode = useComplianceReviewStore(
+		(state) => state.customRulesMode,
+	);
+	const setCustomRulesMode = useComplianceReviewStore(
+		(state) => state.setCustomRulesMode,
+	);
 	const openIndex = useComplianceReviewStore((state) => state.openIndex);
 	const toggleRow = useComplianceReviewStore((state) => state.toggleRow);
 	const runReviewMutation = useRunReviewMutation();
@@ -101,6 +110,10 @@ export function ReviewTabContent() {
 			mode: customRulesMode,
 		});
 	};
+	const onModeChange = (value: string) => {
+		setCustomRulesMode(value as CustomRuleMode);
+	};
+
 	const reviewStatusMessage = runReviewMutation.isError
 		? getMutationErrorMessage(runReviewMutation.error)
 		: runReviewMutation.isSuccess
@@ -122,7 +135,26 @@ export function ReviewTabContent() {
 						Analyze all rows in the attached CSV with standard compliance rules.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="pt-4">
+				<CardContent className="space-y-3 pt-4">
+					<div className="space-y-1.5">
+						<label
+							htmlFor="review-rule-mode"
+							className="text-sm font-medium"
+						>
+							Rule mode
+						</label>
+						<select
+							id="review-rule-mode"
+							className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border px-2.5 py-1 text-sm outline-none focus-visible:ring-[3px]"
+							value={customRulesMode}
+							onChange={(event) => onModeChange(event.target.value)}
+							disabled={loading}
+						>
+							<option value="default">default</option>
+							<option value="custom">custom</option>
+							<option value="combined">combined</option>
+						</select>
+					</div>
 					<Button
 						type="button"
 						onClick={() => void onRunReview()}
@@ -160,7 +192,8 @@ export function ReviewTabContent() {
 						variant="secondary"
 						className="h-7 px-2.5"
 					>
-						Total: <span className="ml-1 font-semibold">{summary.totalRows}</span>
+						Total:{" "}
+						<span className="ml-1 font-semibold">{summary.totalRows}</span>
 					</Badge>
 					<Badge
 						variant="outline"
@@ -173,7 +206,8 @@ export function ReviewTabContent() {
 						variant="outline"
 						className="h-7 border-transparent bg-red-50 px-2.5 text-red-800 ring-1 ring-red-600/20 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-500/25"
 					>
-						Flagged: <span className="ml-1 font-semibold">{summary.flaggedRows}</span>
+						Flagged:{" "}
+						<span className="ml-1 font-semibold">{summary.flaggedRows}</span>
 					</Badge>
 				</div>
 			) : null}
@@ -222,7 +256,9 @@ export function ReviewTabContent() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{!results.length && !runReviewMutation.data && !runReviewMutation.isPending ? (
+							{!results.length &&
+							!runReviewMutation.data &&
+							!runReviewMutation.isPending ? (
 								<TableRow>
 									<TableCell
 										colSpan={5}
@@ -233,7 +269,9 @@ export function ReviewTabContent() {
 								</TableRow>
 							) : null}
 
-							{!results.length && runReviewMutation.data && !runReviewMutation.isPending ? (
+							{!results.length &&
+							runReviewMutation.data &&
+							!runReviewMutation.isPending ? (
 								<TableRow>
 									<TableCell
 										colSpan={5}

@@ -175,23 +175,17 @@ export function CustomRulesTabContent() {
 		toast.success("Rule deleted.");
 	}, [deleteRuleMutation.isSuccess]);
 
-	const customRulesStatusMessage = getRulesQuery.isSuccess
-		? "Custom rules loaded."
-		: "";
-
 	return (
 		<TabsContent
 			value="custom-rules"
 			className="space-y-4"
 		>
-			<SharedCsvUploadCard disabled={customRulesLoading} />
-
 			<Card className="shadow-sm ring-border/80">
 				<CardHeader className="border-border border-b pb-4">
-					<CardTitle>Custom rules settings</CardTitle>
+					<CardTitle>Business rules settings</CardTitle>
 					<CardDescription className="text-xs">
 						Load and manage project-specific rules that can run in default,
-						custom, or combined mode with UDAAP.
+						business, or combined mode with UDAAP.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4 pt-4">
@@ -214,7 +208,7 @@ export function CustomRulesTabContent() {
 
 			<Card className="shadow-sm ring-border/80">
 				<CardHeader className="border-border border-b pb-4">
-					<CardTitle>Create or edit custom rule</CardTitle>
+					<CardTitle>Create or edit business rule</CardTitle>
 					<CardDescription className="text-xs">
 						Rule IDs are generated automatically as UUIDs.
 					</CardDescription>
@@ -270,11 +264,6 @@ export function CustomRulesTabContent() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="pt-0">
-					{customRulesStatusMessage ? (
-						<p className="text-muted-foreground px-4 pt-4 text-xs">
-							{customRulesStatusMessage}
-						</p>
-					) : null}
 					{customRules.length ? (
 						<Table>
 							<TableHeader>
@@ -304,7 +293,7 @@ export function CustomRulesTabContent() {
 						</Table>
 					) : (
 						<p className="text-muted-foreground px-4 pb-4 pt-2 text-xs">
-							No custom rules yet.
+							No business rules yet.
 						</p>
 					)}
 				</CardContent>
