@@ -37,6 +37,7 @@ import {
 	FileUploadList,
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { useComplianceReviewStore } from "@/stores/compliance-review-store";
@@ -226,6 +227,9 @@ function ReviewTabContent() {
 	const reviewStatusMessage = useComplianceReviewStore(
 		(state) => state.reviewStatusMessage,
 	);
+	const reviewStatusKind = useComplianceReviewStore(
+		(state) => state.reviewStatusKind,
+	);
 	const reviewPayload = useComplianceReviewStore(
 		(state) => state.reviewPayload,
 	);
@@ -255,8 +259,16 @@ function ReviewTabContent() {
 						type="button"
 						onClick={() => void runReview()}
 						disabled={loading}
+						className="inline-flex items-center gap-2"
 					>
-						{reviewLoading ? "Running…" : "Run review"}
+						{reviewLoading ? (
+							<>
+								<Spinner className="size-4" />
+								Running review
+							</>
+						) : (
+							"Run review"
+						)}
 					</Button>
 				</CardContent>
 			</Card>
@@ -265,9 +277,9 @@ function ReviewTabContent() {
 				<p
 					className={cn(
 						"text-xs",
-						!reviewPayload &&
-							reviewStatusMessage !== "Review completed." &&
-							"text-destructive",
+						reviewStatusKind === "error"
+							? "text-destructive"
+							: "text-muted-foreground",
 					)}
 				>
 					{reviewStatusMessage}
@@ -439,6 +451,9 @@ function ActionTabContent() {
 	const actionStatusMessage = useComplianceReviewStore(
 		(state) => state.actionStatusMessage,
 	);
+	const actionStatusKind = useComplianceReviewStore(
+		(state) => state.actionStatusKind,
+	);
 	const actionPayload = useComplianceReviewStore(
 		(state) => state.actionPayload,
 	);
@@ -482,8 +497,16 @@ function ActionTabContent() {
 						type="button"
 						onClick={() => void runComplianceAction()}
 						disabled={loading}
+						className="inline-flex items-center gap-2"
 					>
-						{actionLoading ? "Running…" : "Run action"}
+						{actionLoading ? (
+							<>
+								<Spinner className="size-4" />
+								Running action
+							</>
+						) : (
+							"Run action"
+						)}
 					</Button>
 				</CardContent>
 			</Card>
@@ -492,9 +515,9 @@ function ActionTabContent() {
 				<p
 					className={cn(
 						"text-xs",
-						!actionPayload &&
-							actionStatusMessage !== "Compliance action completed." &&
-							"text-destructive",
+						actionStatusKind === "error"
+							? "text-destructive"
+							: "text-muted-foreground",
 					)}
 				>
 					{actionStatusMessage}

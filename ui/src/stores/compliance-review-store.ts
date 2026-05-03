@@ -4,16 +4,19 @@ import { apiClient, REVIEW_ACTION_URL, REVIEW_URL } from "@/lib/api";
 import type { ComplianceActionPayload, ReviewPayload } from "@/types/compliance";
 
 type ErrorBody = { error?: string };
+type StatusKind = "idle" | "success" | "error";
 
 type ComplianceReviewStore = {
 	file: File | null;
 	activeTab: string;
 	reviewLoading: boolean;
 	reviewStatusMessage: string;
+	reviewStatusKind: StatusKind;
 	reviewPayload: ReviewPayload | null;
 	actionPrompt: string;
 	actionLoading: boolean;
 	actionStatusMessage: string;
+	actionStatusKind: StatusKind;
 	actionPayload: ComplianceActionPayload | null;
 	openIndex: number | null;
 	setFile: (file: File | null) => void;
@@ -30,10 +33,12 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 		activeTab: "review",
 		reviewLoading: false,
 		reviewStatusMessage: "",
+		reviewStatusKind: "idle",
 		reviewPayload: null,
 		actionPrompt: "",
 		actionLoading: false,
 		actionStatusMessage: "",
+		actionStatusKind: "idle",
 		actionPayload: null,
 		openIndex: null,
 		setFile: (file) => set({ file }),
@@ -44,12 +49,16 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 		runReview: async () => {
 			const { file } = get();
 			if (!file) {
-				set({ reviewStatusMessage: "Please choose a CSV file." });
+				set({
+					reviewStatusMessage: "Please choose a CSV file.",
+					reviewStatusKind: "error",
+				});
 				return;
 			}
 			set({
 				reviewLoading: true,
-				reviewStatusMessage: "Running compliance review…",
+				reviewStatusMessage: "",
+				reviewStatusKind: "idle",
 				reviewPayload: null,
 				openIndex: null,
 			});
@@ -60,6 +69,7 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 				set({
 					reviewPayload: data,
 					reviewStatusMessage: "Review completed.",
+					reviewStatusKind: "success",
 				});
 			} catch (error) {
 				let message = "Unexpected error.";
@@ -69,6 +79,7 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 				}
 				set({
 					reviewStatusMessage: message,
+					reviewStatusKind: "error",
 					reviewPayload: null,
 				});
 			} finally {
@@ -78,16 +89,23 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 		runComplianceAction: async () => {
 			const { file, actionPrompt } = get();
 			if (!file) {
-				set({ actionStatusMessage: "Please choose a CSV file." });
+				set({
+					actionStatusMessage: "Please choose a CSV file.",
+					actionStatusKind: "error",
+				});
 				return;
 			}
 			if (!actionPrompt.trim()) {
-				set({ actionStatusMessage: "Please enter a compliance action prompt." });
+				set({
+					actionStatusMessage: "Please enter a compliance action prompt.",
+					actionStatusKind: "error",
+				});
 				return;
 			}
 			set({
 				actionLoading: true,
-				actionStatusMessage: "Running compliance action…",
+				actionStatusMessage: "",
+				actionStatusKind: "idle",
 				actionPayload: null,
 			});
 			try {
@@ -101,6 +119,7 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 				set({
 					actionPayload: data,
 					actionStatusMessage: "Compliance action completed.",
+					actionStatusKind: "success",
 				});
 			} catch (error) {
 				let message = "Unexpected error.";
@@ -110,6 +129,7 @@ export const useComplianceReviewStore = create<ComplianceReviewStore>(
 				}
 				set({
 					actionStatusMessage: message,
+					actionStatusKind: "error",
 					actionPayload: null,
 				});
 			} finally {
