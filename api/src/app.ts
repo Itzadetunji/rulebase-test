@@ -6,25 +6,16 @@ import review from './routes/review'
 
 const app = new Hono()
 
-const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '')
-const parseOrigins = (value?: string) =>
-  value
-    ?.split(',')
-    .map(normalizeOrigin)
-    .filter(Boolean) ?? []
-
-const baseOrigins =
+const devOrigins =
   process.env.NODE_ENV !== 'production'
     ? (['http://localhost:5173', 'http://127.0.0.1:5173'] as const)
-    : (['https://rulebase-test.vercel.app'] as const)
-
-const allowedOrigins = [...baseOrigins.map(normalizeOrigin), ...parseOrigins(process.env.FRONTEND_ORIGIN)]
+    : ['https://rulebase-test.vercel.app']
 
 app.use('*', logger())
 app.use(
   '*',
   cors({
-    origin: allowedOrigins,
+    origin: [...devOrigins, ...(process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : [])],
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
   }),
