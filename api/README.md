@@ -145,13 +145,8 @@ api/
 <a name="testing"></a>
 ## Testing
 
-No formal automated test suite is currently configured.
+<img width="619" height="199" alt="Screenshot 2026-05-03 at 23 36 52" src="https://github.com/user-attachments/assets/61c2b705-71e5-4d4c-9c43-eba68aeee2d7" />
 
-Recommended verification:
-
-- Run the API locally with `bun run dev`
-- Submit `sample.csv` via `POST /api/v1/review`
-- Confirm summary and finding structure in the response
 
 ---
 
