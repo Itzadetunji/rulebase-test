@@ -10,6 +10,7 @@
 - [Features](#features)
 - [Getting Started](#getting-started)
 - [Tech Stack](#tech-stack)
+- [Production: TLS and CORS](#production-tls-and-cors)
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
 - [Testing](#testing)
@@ -18,6 +19,7 @@
 ---
 
 <a name="overview"></a>
+
 ## Overview
 
 Rulebase API exposes a review endpoint that accepts interaction data as CSV upload or JSON payload. It parses incoming records, evaluates each interaction against compliance rules, and returns:
@@ -26,28 +28,31 @@ Rulebase API exposes a review endpoint that accepts interaction data as CSV uplo
 - Per-interaction review results
 - Rule-level findings with rationale, evidence, and rewrite suggestions
 
+Custom compliance rules are stored and served via Redis-backed routes under `/api/v1/custom-rules`.
+
 ---
 
 <a name="features"></a>
+
 ## Features
 
-- `POST /api/v1/review` endpoint for compliance analysis
-- Dual input format support:
-  - `multipart/form-data` with CSV file
-  - `application/json` with interactions array
+- `POST /api/v1/review` for compliance analysis (CSV file or JSON interactions)
+- `GET` / `POST` / `PATCH` / `DELETE` under `/api/v1/custom-rules` for custom rules
 - Per-row evaluation with graceful error capture
-- CORS configuration for local UI and configurable frontend origin
-- Structured response payload for easy frontend rendering
+- CORS tuned for local dev and a fixed production frontend origin, plus optional extra origin via env
 
 ---
 
 <a name="getting-started"></a>
+
 ## Getting Started
 
 ### Prerequisites
 
 - Bun 1.0+
 - MiniMax API access key
+
+Custom rules persist with `Bun.redis` when the runtime can reach Redis; otherwise the code falls back to in-memory storage (fine for local dev).
 
 ### Installation
 
@@ -82,6 +87,7 @@ bun run dev
 ---
 
 <a name="tech-stack"></a>
+
 ## Tech Stack
 
 ### Backend
@@ -95,10 +101,22 @@ bun run dev
 - CSV parsing utilities
 - Compliance rules and prompt generation
 - AI-based interaction evaluation
+- Custom rules storage (Redis)
+
+---
+
+<a name="production-tls-and-cors"></a>
+
+## Production: TLS and CORS
+
+Browsers require a **publicly trusted** HTTPS certificate. Serving the API at `https://your-domain` (for example with nginx and Let’s Encrypt) avoids `ERR_CERT_AUTHORITY_INVALID`; self-signed certs or HTTPS to a raw IP are fragile for visitors.
+
+Allowed CORS origins are configured in `src/app.ts` (production frontend host plus localhost in non-production). Set **`FRONTEND_ORIGIN`** if you need an additional origin (another deployment URL, preview domain, or custom frontend host). Values must be full origins only, for example `https://your-app.vercel.app` (scheme, host, optional port—no path).
 
 ---
 
 <a name="screenshots"></a>
+
 ## Screenshots
 
 ### API Request Example
@@ -118,6 +136,7 @@ bun run dev
 ---
 
 <a name="project-structure"></a>
+
 ## Project Structure
 
 ```text
@@ -126,7 +145,9 @@ api/
 │   ├── app.ts
 │   ├── index.ts
 │   ├── routes/
-│   │   └── review.ts
+│   │   ├── review.ts
+│   │   ├── custom-rules.ts
+│   │   └── custom-rules.test.ts
 │   └── lib/
 │       ├── ai/
 │       │   └── minimax.ts
@@ -134,8 +155,11 @@ api/
 │       │   ├── prompt.ts
 │       │   ├── rules.ts
 │       │   └── types.ts
-│       └── csv/
-│           └── parse.ts
+│       ├── csv/
+│       │   └── parse.ts
+│       └── rules/
+│           ├── redis.ts
+│           └── resolve.ts
 ├── sample.csv
 └── package.json
 ```
@@ -143,18 +167,25 @@ api/
 ---
 
 <a name="testing"></a>
+
 ## Testing
 
-<img width="619" height="199" alt="Screenshot 2026-05-03 at 23 36 52" src="https://github.com/user-attachments/assets/61c2b705-71e5-4d4c-9c43-eba68aeee2d7" />
+Run route tests:
 
+```bash
+bun test
+```
 
 ---
 
 <a name="environment-variables"></a>
+
 ## Environment Variables
 
 - `MINIMAX_API_KEY`: MiniMax API key for compliance evaluation requests
 - `MINIMAX_BASE_URL`: Base API URL (default: `https://api.minimax.io/v1`)
 - `MINIMAX_MODEL`: Model name used for evaluations
-- `PORT` (optional): API port (defaults to `3000`)
-- `FRONTEND_ORIGIN` (optional): Additional allowed CORS origin
+- `PORT` (optional): API listening port (defaults to `3000`)
+- `FRONTEND_ORIGIN` (optional): Extra allowed CORS origin beyond the defaults in `app.ts` (full origin URL)
+
+Redis for durable custom rules is configured via Bun’s runtime / deployment (see `src/lib/rules/redis.ts`); `.env.example` currently lists only MiniMax-related keys.

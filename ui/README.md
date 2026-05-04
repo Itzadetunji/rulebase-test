@@ -12,12 +12,13 @@
 - [Tech Stack](#tech-stack)
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
-- [Testing](#testing)
+- [Beautify](#beautify)
 - [Environment Variables](#environment-variables)
 
 ---
 
 <a name="overview"></a>
+
 ## Overview
 
 Rulebase UI is the web interface for running UDAAP compliance checks on customer interaction data. It lets you upload a CSV, sends it to the backend review endpoint, and renders:
@@ -26,13 +27,17 @@ Rulebase UI is the web interface for running UDAAP compliance checks on customer
 - Row-level risk indicators
 - Detailed findings (severity, rationale, evidence, suggested rewrite)
 
+Custom rules can be managed in the UI against the `/api/v1/custom-rules` API.
+
 ---
 
 <a name="features"></a>
+
 ## Features
 
 - CSV upload workflow for interaction datasets
 - One-click review run against `POST /api/v1/review`
+- Custom rules tab for CRUD against the backend
 - Expandable result rows for detailed rule findings
 - Risk badges and summary counters for quick triage
 - Error-state handling for API and validation failures
@@ -40,6 +45,7 @@ Rulebase UI is the web interface for running UDAAP compliance checks on customer
 ---
 
 <a name="getting-started"></a>
+
 ## Getting Started
 
 ### Prerequisites
@@ -67,6 +73,8 @@ bun install
 cp .env.example .env
 ```
 
+Point `VITE_API_BASE_URL` at your API (see [Environment Variables](#environment-variables)).
+
 4. Start the development server:
 
 ```bash
@@ -80,6 +88,7 @@ bun run dev
 ---
 
 <a name="tech-stack"></a>
+
 ## Tech Stack
 
 ### Frontend
@@ -99,13 +108,14 @@ bun run dev
 ---
 
 <a name="screenshots"></a>
+
 ## Screenshots
 
 ### Main Review Screen
 
 `[Add screenshot here]`
 
-*Upload CSV, run review, and inspect summary metrics.*
+_Upload CSV, run review, and inspect summary metrics._
 
 ---
 
@@ -113,18 +123,19 @@ bun run dev
 
 `[Add screenshot here]`
 
-*Inspect flagged rules with rationale, evidence, and suggested rewrites.*
+_Inspect flagged rules with rationale, evidence, and suggested rewrites._
 
 ---
 
 <a name="project-structure"></a>
+
 ## Project Structure
 
 ```text
 ui/
 ├── src/
 │   ├── components/
-│   │   ├── ComplianceReview.tsx
+│   │   ├── compliance-review/
 │   │   └── ui/
 │   ├── lib/
 │   │   ├── api.ts
@@ -141,8 +152,9 @@ ui/
 
 ---
 
-<a name="testing"></a>
-## Testing
+<a name="beautify"></a>
+
+## Beautify
 
 Run lint checks:
 
@@ -159,6 +171,13 @@ bun run build
 ---
 
 <a name="environment-variables"></a>
+
 ## Environment Variables
 
-- `VITE_API_BASE_URL`: Base URL of the backend API (for example `http://localhost:3000`)
+Vite only exposes variables prefixed with `VITE_`. They are **baked in at build time**; after changing them on a host like Vercel, trigger a new deployment.
+
+- **`VITE_API_BASE_URL`**: Origin of the backend only—no path. Examples:
+  - Local: `http://localhost:3000`
+  - Production: `https://hemline.app` or `https://your-api.example.com` (use a hostname with a valid public certificate, not a raw IP with a self-signed cert)
+
+The app builds request paths such as `/api/v1/review` and `/api/v1/custom-rules` on top of this base (see `src/lib/api.ts`).
