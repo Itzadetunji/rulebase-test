@@ -33,8 +33,8 @@ import { populationCategory, riskFromResult } from "@/lib/review-helpers";
 import { cn } from "@/lib/utils";
 import { useComplianceReviewStore } from "@/stores/compliance-review-store";
 import type { ReviewResult, RuleFinding } from "@/types/compliance";
+import { RuleModeSelect } from "./RuleModeSelect";
 import { SharedCsvUploadCard } from "./SharedCsvUploadCard";
-import type { CustomRuleMode } from "@/types/compliance";
 
 function findingStatusVariant(
 	status: RuleFinding["status"],
@@ -110,9 +110,6 @@ export function ReviewTabContent() {
 			mode: customRulesMode,
 		});
 	};
-	const onModeChange = (value: string) => {
-		setCustomRulesMode(value as CustomRuleMode);
-	};
 
 	const reviewStatusMessage = runReviewMutation.isError
 		? getMutationErrorMessage(runReviewMutation.error)
@@ -136,25 +133,12 @@ export function ReviewTabContent() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3 pt-4">
-					<div className="space-y-1.5">
-						<label
-							htmlFor="review-rule-mode"
-							className="text-sm font-medium"
-						>
-							Rule mode
-						</label>
-						<select
-							id="review-rule-mode"
-							className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border px-2.5 py-1 text-sm outline-none focus-visible:ring-[3px]"
-							value={customRulesMode}
-							onChange={(event) => onModeChange(event.target.value)}
-							disabled={loading}
-						>
-							<option value="default">default</option>
-							<option value="custom">custom</option>
-							<option value="combined">combined</option>
-						</select>
-					</div>
+					<RuleModeSelect
+						id="review-rule-mode"
+						value={customRulesMode}
+						onValueChange={setCustomRulesMode}
+						disabled={loading}
+					/>
 					<Button
 						type="button"
 						onClick={() => void onRunReview()}

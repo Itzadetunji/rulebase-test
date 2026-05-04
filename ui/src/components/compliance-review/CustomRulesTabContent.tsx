@@ -34,8 +34,9 @@ import {
 	useUpdateRuleMutation,
 } from "@/hooks/use-custom-rules-queries";
 import { useComplianceReviewStore } from "@/stores/compliance-review-store";
-import type { ComplianceRule, CustomRuleMode } from "@/types/compliance";
+import type { ComplianceRule } from "@/types/compliance";
 import { toast } from "sonner";
+import { RuleModeSelect } from "./RuleModeSelect";
 
 export function CustomRulesTabContent() {
 	const getRulesQuery = useGetRulesQuery();
@@ -111,11 +112,6 @@ export function CustomRulesTabContent() {
 		closeRuleSheet();
 	};
 
-	const onModeChange = async (value: string) => {
-		const mode = value as CustomRuleMode;
-		setCustomRulesMode(mode);
-	};
-
 	const customRules = getRulesQuery.data?.rules ?? [];
 	const customRulesLoading =
 		getRulesQuery.isFetching ||
@@ -188,20 +184,12 @@ export function CustomRulesTabContent() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4 pt-4">
-					<div className="space-y-1.5">
-						<Label htmlFor="rules-mode">Rule mode</Label>
-						<select
-							id="rules-mode"
-							className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border px-2.5 py-1 text-sm outline-none focus-visible:ring-[3px]"
-							value={customRulesMode}
-							onChange={(event) => void onModeChange(event.target.value)}
-							disabled={customRulesLoading}
-						>
-							<option value="default">default</option>
-							<option value="custom">custom</option>
-							<option value="combined">combined</option>
-						</select>
-					</div>
+					<RuleModeSelect
+						id="rules-mode"
+						value={customRulesMode}
+						onValueChange={setCustomRulesMode}
+						disabled={customRulesLoading}
+					/>
 				</CardContent>
 			</Card>
 
